@@ -2,6 +2,7 @@
 # ==========================================================
 # Xiaomi Pad 6 - WPS Office PC Level (EN + All-in-One Mode)
 # Versi Komuniti (Percuma / Tanpa Token)
+# Fix: Gunakan nilai rasmi 'prome_fushion' & kekalkan tetapan asal
 # ==========================================================
 
 # --- AUTO-ELEVATE KE ROOT GLOBAL MOUNT NAMESPACE (su -M) ---
@@ -64,8 +65,33 @@ install_english() {
         echo "[*] Fail bahasa en_US terbina dalam dikesan: $HAS_EN"
     fi
 
-    # Tulis konfigurasi English + Mode All-in-One (prome_all)
-    cat << 'EOF' > "$CONF"
+    # Bina semula Office.conf daripada backup asal sambil kekalkan tetapan Xiaomi
+    # Nilai rasmi WPS untuk gabungan tab Word/Sheet/PPT dalam 1 tetingkap ialah 'prome_fushion'
+    if [ -f "${CONF}.bak_cn" ]; then
+        grep -Ev '^(languages=|FirstInstallLang=|common\\DefaultLanguage=|common\\Local\\UILanguage=|wpsoffice\\Application%20Settings\\AppComponentMode=|wpsoffice\\Application%20Settings\\AppComponentModeInstall=)' "${CONF}.bak_cn" > "${CONF}.tmp"
+
+        if grep -q '^\[General\]' "${CONF}.tmp"; then
+            sed -i '/^\[General\]/a languages=en_US\nFirstInstallLang=en_US' "${CONF}.tmp"
+        else
+            printf '[General]\nlanguages=en_US\nFirstInstallLang=en_US\n\n' | cat - "${CONF}.tmp" > "${CONF}.tmp2" && mv "${CONF}.tmp2" "${CONF}.tmp"
+        fi
+
+        if grep -q '^\[6\.0\]' "${CONF}.tmp"; then
+            sed -i '/^\[6\.0\]/a common\\DefaultLanguage=1033\ncommon\\Local\\UILanguage=1033\nwpsoffice\\Application%20Settings\\AppComponentMode=prome_fushion\nwpsoffice\\Application%20Settings\\AppComponentModeInstall=prome_fushion' "${CONF}.tmp"
+        else
+            cat << 'EOF' >> "${CONF}.tmp"
+
+[6.0]
+common\DefaultLanguage=1033
+common\Local\UILanguage=1033
+wpsoffice\Application%20Settings\AppComponentMode=prome_fushion
+wpsoffice\Application%20Settings\AppComponentModeInstall=prome_fushion
+EOF
+        fi
+
+        mv "${CONF}.tmp" "$CONF"
+    else
+        cat << 'EOF' > "$CONF"
 [General]
 languages=en_US
 FirstInstallLang=en_US
@@ -73,9 +99,10 @@ FirstInstallLang=en_US
 [6.0]
 common\DefaultLanguage=1033
 common\Local\UILanguage=1033
-wpsoffice\Application%20Settings\AppComponentMode=prome_all
-wpsoffice\Application%20Settings\AppComponentModeInstall=prome_all
+wpsoffice\Application%20Settings\AppComponentMode=prome_fushion
+wpsoffice\Application%20Settings\AppComponentModeInstall=prome_fushion
 EOF
+    fi
 
     chmod 644 "$CONF"
 
@@ -89,7 +116,7 @@ EOF
     echo ""
     echo "=========================================="
     echo " [BERJAYA] WPS Office PC kini dalam English!"
-    echo " - Word, Sheet & PPT digabung dalam 1 window (Tab Mode)"
+    echo " - Word, Sheet & PPT digabung dalam 1 window (prome_fushion)"
     echo " - Sila buka semula aplikasi WPS Office PC sekarang."
     echo "=========================================="
 }
@@ -115,6 +142,8 @@ FirstInstallLang=zh_CN
 [6.0]
 common\DefaultLanguage=2052
 common\Local\UILanguage=2052
+wpsoffice\Application%20Settings\AppComponentMode=prome_fushion
+wpsoffice\Application%20Settings\AppComponentModeInstall=prome_fushion
 EOF
     fi
 
